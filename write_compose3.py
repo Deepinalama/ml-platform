@@ -1,4 +1,5 @@
-services:
+﻿content = open('docker-compose.yml').read()
+content = """services:
   postgres:
     image: postgres:15
     container_name: ml_platform_postgres
@@ -141,3 +142,8 @@ volumes:
 networks:
   ml_platform_net:
     driver: bridge
+"""
+
+with open('docker-compose.yml', 'w') as f:
+    f.write(content)
+print('Done - docker-compose.yml updated with Django service')
