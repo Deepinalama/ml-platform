@@ -6,8 +6,11 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import ModelVersion, PipelineRun, Prediction
-from .serializers import (ModelVersionSerializer, PipelineRunSerializer,
-                          PredictionSerializer)
+from .serializers import (
+    ModelVersionSerializer,
+    PipelineRunSerializer,
+    PredictionSerializer,
+)
 
 
 @api_view(["GET"])
