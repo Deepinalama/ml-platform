@@ -1,5 +1,8 @@
  ML Platform — End-to-End Churn Prediction System
 
+[![CI - Lint & Test](https://github.com/Deepinalama/ml-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/Deepinalama/ml-platform/actions/workflows/ci.yml)
+
+
 -A production-style Machine Learning platform built with **Apache Airflow**, **FastAPI**, **Django REST Framework**, and **PostgreSQL** — all containerized with **Docker Compose**.
 
 ---
@@ -25,6 +28,9 @@
 
 ```
 ml-platform/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                # CI: lint + test for all 3 services
 ├── docker-compose.yml
 ├── .env
 ├── postgres/
@@ -138,6 +144,41 @@ GET  /api/models/     → Authorization: Bearer eyJ...
 ---
 
  Running the Project
+
+  Running Tests & CI
+
+This project uses GitHub Actions to automatically lint and test all three services (`django_app`, `fastapi_app`, `airflow`) on every push and pull request to `main`/`develop`.
+
+What CI checks
+- **Lint** — `ruff` (code issues), `black` (formatting), `isort` (import order)
+- **Test** — `pytest` for Django and FastAPI
+- **Airflow DAGs** — validates that all DAG files compile without syntax errors
+
+Running checks locally
+
+Each service has its own virtual environment and dependencies. Example for Django:
+
+\`\`\`bash
+cd django_app
+python -m venv venv
+.\venv\Scripts\Activate.ps1   # Windows PowerShell
+pip install -r requirements.txt
+pip install pytest pytest-django ruff black isort
+
+ruff check .
+black --check .
+isort --check-only .
+python manage.py check
+pytest
+\`\`\`
+
+Repeat the same pattern inside `fastapi_app/` (using `pytest` + `httpx` instead of `pytest-django`).
+
+ Auto-fixing formatting issues
+\`\`\`bash
+isort .
+black .
+\`\`\`
 
 Prerequisites
 - Docker Desktop
