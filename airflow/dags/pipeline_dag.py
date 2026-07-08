@@ -22,9 +22,9 @@ default_args = {
     "retry_delay": timedelta(minutes=2),
 }
 
-# ─────────────────────────────────────────
-# TASK 1: Generate and insert raw customers
-# ─────────────────────────────────────────
+
+#  Generate and insert raw data
+
 def fetch_data():
     hook = PostgresHook(postgres_conn_id=CONN_ID)
     conn = hook.get_conn()
@@ -68,9 +68,9 @@ def fetch_data():
     print(f"Inserted {len(rows)} raw customer rows")
 
 
-# ─────────────────────────────────────────
-# TASK 2: Transform raw data into features
-# ─────────────────────────────────────────
+
+# Transform raw data into features
+
 def transform_features():
     hook = PostgresHook(postgres_conn_id=CONN_ID)
     conn = hook.get_conn()
@@ -123,9 +123,9 @@ def transform_features():
     print(f"Transformed {len(feature_rows)} rows into features")
 
 
-# ─────────────────────────────────────────
-# TASK 3: Train the ML model
-# ─────────────────────────────────────────
+
+#  Train the ML model
+
 def train_model(**context):
     hook = PostgresHook(postgres_conn_id=CONN_ID)
     conn = hook.get_conn()
@@ -187,9 +187,9 @@ def train_model(**context):
     context["ti"].xcom_push(key="version_name", value=model_filename)
 
 
-# ─────────────────────────────────────────
-# TASK 4: Register model in model_versions
-# ─────────────────────────────────────────
+
+#  Register model in model_versions
+
 def register_model(**context):
     ti = context["ti"]
     accuracy = ti.xcom_pull(key="accuracy", task_ids="train_model")
@@ -222,9 +222,8 @@ def register_model(**context):
     print(f"Registered model {version_name} with accuracy {accuracy}")
 
 
-# ─────────────────────────────────────────
 # DAG definition
-# ─────────────────────────────────────────
+
 with DAG(
     dag_id="churn_prediction_pipeline",
     default_args=default_args,

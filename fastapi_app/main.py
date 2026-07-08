@@ -1,6 +1,6 @@
+import logging
 import os
 import pickle
-import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
 
@@ -21,7 +21,9 @@ DB_HOST = os.getenv("DB_HOST", "postgres")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "ml_platform")
 
-DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL = (
+    f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
 engine = create_engine(DATABASE_URL)
 
 
@@ -72,8 +74,8 @@ def load_active_model():
         logger.error(f"Failed to load model: {e}")
 
 
+#  load model on startup
 
-# Lifespan: load model on startup
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -91,8 +93,8 @@ app = FastAPI(
 )
 
 
-
 # Request / Response schemas
+
 
 class PredictRequest(BaseModel):
     customer_id: str
@@ -111,8 +113,8 @@ class PredictResponse(BaseModel):
     model_version: str
 
 
-
 # Endpoints
+
 
 @app.get("/health")
 def health():
@@ -140,13 +142,17 @@ def predict(request: PredictRequest):
         raise HTTPException(status_code=503, detail="No model loaded")
 
     # Build feature dataframe in the same column order as training
-    features = pd.DataFrame([{
-        "days_since_signup": request.days_since_signup,
-        "days_since_last_login": request.days_since_last_login,
-        "avg_monthly_spend": request.avg_monthly_spend,
-        "support_ticket_count": request.support_ticket_count,
-        "is_premium": int(request.is_premium),
-    }])
+    features = pd.DataFrame(
+        [
+            {
+                "days_since_signup": request.days_since_signup,
+                "days_since_last_login": request.days_since_last_login,
+                "avg_monthly_spend": request.avg_monthly_spend,
+                "support_ticket_count": request.support_ticket_count,
+                "is_premium": int(request.is_premium),
+            }
+        ]
+    )
 
     model = model_state["model"]
     prediction = bool(model.predict(features)[0])
@@ -155,19 +161,22 @@ def predict(request: PredictRequest):
     # Log prediction to predictions table
     try:
         with engine.connect() as conn:
-            conn.execute(text("""
+            conn.execute(
+                text("""
                 INSERT INTO predictions
                     (customer_id, prediction, probability, model_version_id, requested_by, predicted_at)
                 VALUES
                     (:customer_id, :prediction, :probability, :model_version_id, :requested_by, :predicted_at)
-            """), {
-                "customer_id": request.customer_id,
-                "prediction": prediction,
-                "probability": probability,
-                "model_version_id": model_state["version_id"],
-                "requested_by": request.requested_by,
-                "predicted_at": datetime.utcnow(),
-            })
+            """),
+                {
+                    "customer_id": request.customer_id,
+                    "prediction": prediction,
+                    "probability": probability,
+                    "model_version_id": model_state["version_id"],
+                    "requested_by": request.requested_by,
+                    "predicted_at": datetime.utcnow(),
+                },
+            )
             conn.commit()
     except Exception as e:
         logger.error(f"Failed to log prediction: {e}")
