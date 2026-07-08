@@ -1,38 +1,30 @@
- ML Platform — End-to-End Churn Prediction System
+# ML Platform — End-to-End Churn Prediction System
 
-[![CI - Lint & Test](https://github.com/Deepinalama/ml-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/Deepinalama/ml-platform/actions/workflows/ci.yml)
+![CI - Lint & Test](https://github.com/Deepinalama/ml-platform/actions/workflows/ci.yml/badge.svg)
 
+A production-style Machine Learning platform built with Apache Airflow, FastAPI, Django REST Framework, and PostgreSQL — all containerized with Docker Compose.
 
--A production-style Machine Learning platform built with **Apache Airflow**, **FastAPI**, **Django REST Framework**, and **PostgreSQL** — all containerized with **Docker Compose**.
-
----
-
-
----
-
- Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| **Orchestration** | Apache Airflow 2.9 |
-| **ML Inference API** | FastAPI + Uvicorn |
-| **Control Plane API** | Django REST Framework + SimpleJWT |
-| **ML Model** | Scikit-learn (Random Forest Classifier) |
-| **Database** | PostgreSQL 15 |
-| **Containerization** | Docker Compose |
-| **Data Processing** | Pandas, Faker |
+| Orchestration | Apache Airflow 2.9 |
+| ML Inference API | FastAPI + Uvicorn |
+| Control Plane API | Django REST Framework + SimpleJWT |
+| ML Model | Scikit-learn (Random Forest Classifier) |
+| Database | PostgreSQL 15 |
+| Containerization | Docker Compose |
+| Data Processing | Pandas, Faker |
 
----
-
- Project Structure
+## Project Structure
 
 ```
 ml-platform/
+├── docker-compose.yml
+├── .env
 ├── .github/
 │   └── workflows/
 │       └── ci.yml                # CI: lint + test for all 3 services
-├── docker-compose.yml
-├── .env
 ├── postgres/
 │   ├── init.sql                  # 5-table schema
 │   └── 00_create_airflow_db.sql
@@ -56,21 +48,17 @@ ml-platform/
     └── model_storage/            # Shared .pkl volume
 ```
 
----
-
- Database Schema
+## Database Schema
 
 | Table | Purpose |
 |---|---|
-| `raw_customers` | Raw ingested customer data |
-| `features` | Cleaned and engineered features for ML |
-| `model_versions` | ML model registry (accuracy, file path, active status) |
-| `predictions` | Log of every prediction made by FastAPI |
-| `pipeline_runs` | Airflow DAG run history |
+| raw_customers | Raw ingested customer data |
+| features | Cleaned and engineered features for ML |
+| model_versions | ML model registry (accuracy, file path, active status) |
+| predictions | Log of every prediction made by FastAPI |
+| pipeline_runs | Airflow DAG run history |
 
----
-
-Airflow Pipeline (DAG)
+## Airflow Pipeline (DAG)
 
 The `churn_prediction_pipeline` DAG runs daily with 4 tasks:
 
@@ -83,20 +71,20 @@ fetch_data → transform_features → train_model → register_model
 - **train_model** — Trains a Random Forest classifier, saves `.pkl` to shared volume
 - **register_model** — Registers model metadata in `model_versions`, marks it active
 
----
- FastAPI Endpoints
+## FastAPI Endpoints
 
 Base URL: `http://localhost:8000`
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/health` | Health check + model loaded status |
-| `GET` | `/model-info` | Active model version info |
-| `POST` | `/predict` | Predict churn for a customer |
-| `POST` | `/reload-model` | Reload latest active model |
+| GET | `/health` | Health check + model loaded status |
+| GET | `/model-info` | Active model version info |
+| POST | `/predict` | Predict churn for a customer |
+| POST | `/reload-model` | Reload latest active model |
 
- Sample Predict Request
-```json
+### Sample Predict Request
+
+```
 POST /predict
 {
   "customer_id": "customer-001",
@@ -109,8 +97,9 @@ POST /predict
 }
 ```
 
- Sample Response
-```json
+### Sample Response
+
+```
 {
   "customer_id": "customer-001",
   "will_churn": true,
@@ -119,79 +108,44 @@ POST /predict
 }
 ```
 
----
-
- Django REST API + JWT
+## Django REST API + JWT
 
 Base URL: `http://localhost:8001`
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `POST` | `/api/auth/register/` | None | Register new user |
-| `POST` | `/api/auth/login/` | None | Login, get JWT tokens |
-| `POST` | `/api/auth/refresh/` | None | Refresh access token |
-| `GET` | `/api/models/` | JWT | List all model versions |
-| `GET` | `/api/predictions/` | JWT | List prediction history |
-| `GET` | `/api/pipeline-runs/` | JWT | List pipeline run history |
-| `POST` | `/api/trigger-retrain/` | JWT (Admin) | Trigger Airflow DAG manually |
+| POST | `/api/auth/register/` | None | Register new user |
+| POST | `/api/auth/login/` | None | Login, get JWT tokens |
+| POST | `/api/auth/refresh/` | None | Refresh access token |
+| GET | `/api/models/` | JWT | List all model versions |
+| GET | `/api/predictions/` | JWT | List prediction history |
+| GET | `/api/pipeline-runs/` | JWT | List pipeline run history |
+| POST | `/api/trigger-retrain/` | JWT (Admin) | Trigger Airflow DAG manually |
 
- JWT Flow
+### JWT Flow
+
 ```
 POST /api/auth/login/ → { access: "eyJ...", refresh: "eyJ..." }
 GET  /api/models/     → Authorization: Bearer eyJ...
 ```
 
----
+## Running the Project
 
- Running the Project
+### Prerequisites
 
-  Running Tests & CI
-
-This project uses GitHub Actions to automatically lint and test all three services (`django_app`, `fastapi_app`, `airflow`) on every push and pull request to `main`/`develop`.
-
-What CI checks
-- **Lint** — `ruff` (code issues), `black` (formatting), `isort` (import order)
-- **Test** — `pytest` for Django and FastAPI
-- **Airflow DAGs** — validates that all DAG files compile without syntax errors
-
-Running checks locally
-
-Each service has its own virtual environment and dependencies. Example for Django:
-
-\`\`\`bash
-cd django_app
-python -m venv venv
-.\venv\Scripts\Activate.ps1   # Windows PowerShell
-pip install -r requirements.txt
-pip install pytest pytest-django ruff black isort
-
-ruff check .
-black --check .
-isort --check-only .
-python manage.py check
-pytest
-\`\`\`
-
-Repeat the same pattern inside `fastapi_app/` (using `pytest` + `httpx` instead of `pytest-django`).
-
- Auto-fixing formatting issues
-\`\`\`bash
-isort .
-black .
-\`\`\`
-
-Prerequisites
 - Docker Desktop
 - Docker Compose
 
- 1. Clone the repo
+### Clone the repo
+
 ```bash
 git clone https://github.com/Deepinalama/ml-platform.git
 cd ml-platform
 ```
 
-2. Set up environment variables
-```bash
+### Set up environment variables
+
+```
 # Edit .env with your values
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=your_password
@@ -205,37 +159,79 @@ AIRFLOW_SECRET_KEY=your_secret_key
 DJANGO_SECRET_KEY=your_django_secret
 ```
 
-3. Start all services
+### Start all services
+
 ```bash
 docker-compose up -d --build
 ```
 
- 4. Run Django migrations and create superuser
+### Run Django migrations and create superuser
+
 ```bash
 docker exec -it ml_platform_django python manage.py migrate
 docker exec -it ml_platform_django python manage.py createsuperuser
 ```
 
- 5. Set up Airflow Postgres connection
-- Go to `http://localhost:8080` (Airflow UI)
-- Admin → Connections → Add
-- Connection Id: `ml_platform_postgres`, Type: `Postgres`, Host: `postgres`, Port: `5432`
+### Set up Airflow Postgres connection
 
- 6. Trigger the pipeline
-- In Airflow UI, trigger `churn_prediction_pipeline` manually
-- Watch all 4 tasks turn green
+1. Go to `http://localhost:8080` (Airflow UI)
+2. Admin → Connections → Add
+3. Connection Id: `ml_platform_postgres`, Type: `Postgres`, Host: `postgres`, Port: `5432`
 
- 7. Test the APIs
+### Trigger the pipeline
+
+1. In Airflow UI, trigger `churn_prediction_pipeline` manually
+2. Watch all 4 tasks turn green
+
+### Test the APIs
+
 - FastAPI Swagger UI: `http://localhost:8000/docs`
 - Django REST API: `http://localhost:8001/api/auth/login/`
 
----
+## Running Tests & CI
 
- 🔗 Services
+This project uses GitHub Actions to automatically lint and test all three services (`django_app`, `fastapi_app`, `airflow`) on every push and pull request to `main`/`develop`.
+
+### What CI checks
+
+- **Lint** — `ruff` (code issues), `black` (formatting), `isort` (import order)
+- **Test** — `pytest` for Django and FastAPI
+- **Airflow DAGs** — validates that all DAG files compile without syntax errors
+
+### Running checks locally
+
+Each service has its own virtual environment and dependencies. Example for Django (Windows PowerShell):
+
+```powershell
+cd django_app
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+pip install pytest pytest-django ruff black isort
+
+ruff check .
+black --check .
+isort --check-only .
+python manage.py check
+pytest
+```
+
+Repeat the same pattern inside `fastapi_app/` (using `pytest` + `httpx` instead of `pytest-django`).
+
+### Auto-fixing formatting issues
+
+```powershell
+isort .
+black .
+```
+
+> Note: `isort` is configured with `profile = "black"` in each service's `pyproject.toml` so it doesn't conflict with `black`'s formatting rules.
+
+## 🔗 Services
 
 | Service | URL |
 |---|---|
-| Airflow UI | http://localhost:8080 |
-| FastAPI Swagger | http://localhost:8000/docs |
-| Django REST API | http://localhost:8001 |
-| PostgreSQL | localhost:5432 |
+| Airflow UI | `http://localhost:8080` |
+| FastAPI Swagger | `http://localhost:8000/docs` |
+| Django REST API | `http://localhost:8001` |
+| PostgreSQL | `localhost:5432` |
