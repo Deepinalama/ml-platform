@@ -124,8 +124,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: "pip"
-
+          
       - name: Check DAG files compile
         run: |
           python -c "
